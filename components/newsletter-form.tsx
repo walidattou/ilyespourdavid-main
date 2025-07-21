@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/components/ui/use-toast"
 import { useLanguage } from "@/contexts/language-context"
-import emailjs from "@emailjs/browser"
 
 export default function NewsletterForm() {
   const { t } = useLanguage()
@@ -35,20 +34,25 @@ export default function NewsletterForm() {
 
       console.log('Sending EmailJS newsletter form with params:', templateParams)
 
-      const result = await emailjs.send(
-        'service_vygi4wf',
-        'template_gmlhh5g',
-        templateParams,
-        '47Sfd5g4f9BnD8uls'
-      )
-
-      console.log('EmailJS newsletter form result:', result)
-
-      setEmail("")
-      toast({
-        title: t("forms.subscriptionSuccess"),
-        description: t("forms.newsletterSubscribed"),
-      })
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ formType: 'newsletter', ...templateParams }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setEmail("")
+        toast({
+          title: t("forms.subscriptionSuccess"),
+          description: t("forms.newsletterSubscribed"),
+        })
+      } else {
+        toast({
+          title: "Erreur lors de l'inscription",
+          description: data.error || "Une erreur s'est produite lors de l'inscription. Veuillez réessayer.",
+          variant: "destructive"
+        })
+      }
 
     } catch (error) {
       console.error('EmailJS Error:', error)

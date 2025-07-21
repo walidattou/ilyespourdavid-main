@@ -10,7 +10,6 @@ import { useToast } from "@/components/ui/use-toast"
 import { Loader2, X, CheckCircle } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
 import { motion } from "framer-motion"
-import emailjs from "@emailjs/browser"
 
 interface InvestorFormProps {
   type: "investisseur" | "preteur"
@@ -35,56 +34,43 @@ export default function InvestorForm({ type, onClose }: InvestorFormProps) {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-
+    e.preventDefault();
+    setIsLoading(true);
     try {
       const templateParams = {
         prenom: formData.firstName,
         nom: formData.lastName,
-        adresse: "",
-        ville: "",
-        province: "",
-        code_postal: "",
         telephone: formData.phone,
         email: formData.email,
         sujet: type === "investisseur" ? "Demande d'investisseur" : "Demande de prêteur",
         message: `Nouvelle demande pour ${type === "investisseur" ? "investisseur" : "prêteur"}: ${formData.firstName} ${formData.lastName} souhaite rejoindre notre réseau.`
+      };
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ formType: 'investor', ...templateParams }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setShowSuccessModal(true);
+        setFormData({ firstName: "", lastName: "", email: "", phone: "" });
+      } else {
+        toast({
+          title: "Erreur lors de l'envoi",
+          description: data.error || "Une erreur s'est produite lors de l'envoi de votre demande. Veuillez réessayer.",
+          variant: "destructive"
+        });
       }
-
-      console.log('Sending EmailJS investor form with params:', templateParams)
-
-      const result = await emailjs.send(
-        'service_vygi4wf',
-        'template_gmlhh5g',
-        templateParams,
-        '47Sfd5g4f9BnD8uls'
-      )
-
-      console.log('EmailJS investor form result:', result)
-
-      // Show success modal
-      setShowSuccessModal(true)
-
-      // Reset form
-      setFormData({
-        firstName: "",
-        lastName: "",
-        email: "",
-        phone: "",
-      })
-
     } catch (error) {
-      console.error('EmailJS Error:', error)
       toast({
         title: "Erreur lors de l'envoi",
         description: "Une erreur s'est produite lors de l'envoi de votre demande. Veuillez réessayer.",
         variant: "destructive"
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const title = type === "investisseur" ? "Formulaire Investisseur" : "Formulaire Prêteur"
   const description =

@@ -7,7 +7,6 @@ import AnimatedSection from "@/components/animated-section"
 import { useLanguage } from "@/contexts/language-context"
 import { useState } from "react"
 import { useToast } from "@/components/ui/use-toast"
-import emailjs from "@emailjs/browser"
 
 export default function NousJoindre() {
   const { t } = useLanguage()
@@ -35,69 +34,51 @@ export default function NousJoindre() {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
+    e.preventDefault();
     if (!formData.consent) {
       toast({
         title: t("contact.errorTitle"),
         description: t("contact.consentRequired"),
         variant: "destructive"
-      })
-      return
+      });
+      return;
     }
-
-    setIsLoading(true)
-
+    setIsLoading(true);
     try {
       const templateParams = {
         prenom: formData.firstName,
         nom: formData.lastName,
-        adresse: "", // Not in current form but keeping for template compatibility
-        ville: "", // Not in current form but keeping for template compatibility
-        province: "", // Not in current form but keeping for template compatibility
-        code_postal: "", // Not in current form but keeping for template compatibility
         telephone: formData.phone,
         email: formData.email,
         sujet: formData.subject,
         message: formData.message
+      };
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ formType: 'contact', ...templateParams }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setShowSuccessModal(true);
+        setFormData({ firstName: "", lastName: "", email: "", phone: "", subject: "", message: "", consent: false });
+      } else {
+        toast({
+          title: t("contact.errorTitle"),
+          description: data.error || t("contact.errorMessage"),
+          variant: "destructive"
+        });
       }
-
-      console.log('Sending EmailJS with params:', templateParams)
-
-      const result = await emailjs.send(
-        'service_vygi4wf',
-        'template_gmlhh5g',
-        templateParams,
-        '47Sfd5g4f9BnD8uls'
-      )
-
-      console.log('EmailJS result:', result)
-
-      // Show success modal instead of toast
-      setShowSuccessModal(true)
-
-      // Reset form
-      setFormData({
-        firstName: "",
-        lastName: "",
-        email: "",
-        phone: "",
-        subject: "",
-        message: "",
-        consent: false
-      })
-
     } catch (error) {
-      console.error('EmailJS Error:', error)
       toast({
         title: t("contact.errorTitle"),
         description: t("contact.errorMessage"),
         variant: "destructive"
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="pt-32">

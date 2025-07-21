@@ -8,7 +8,6 @@ import { useToast } from "@/components/ui/use-toast"
 import { Loader2, CheckCircle, X } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
 import { motion } from "framer-motion"
-import emailjs from "@emailjs/browser"
 
 interface OfferFormProps {
   buttonText?: string
@@ -56,17 +55,20 @@ export default function OfferForm({ buttonText, className = "" }: OfferFormProps
 
       console.log('Sending EmailJS offer form with params:', templateParams)
 
-      const result = await emailjs.send(
-        'service_vygi4wf',
-        'template_gmlhh5g',
-        templateParams,
-        '47Sfd5g4f9BnD8uls'
-      )
-
-      console.log('EmailJS offer form result:', result)
-
-      // Show success modal
-      setShowSuccessModal(true)
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ formType: 'offer', ...templateParams }),
+      });
+      const data = await response.json();
+      if (data.success) setShowSuccessModal(true);
+      else {
+        toast({
+          title: t("forms.errorTitle"),
+          description: data.error || t("forms.errorMessage"),
+          variant: "destructive"
+        });
+      }
 
       // Reset form
       setFormData({
